@@ -1,4 +1,6 @@
 {
+	"httpEnabled": false,
+
 	"http": {
 		"port": 0,
 		"path": ""

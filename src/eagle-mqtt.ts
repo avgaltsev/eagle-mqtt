@@ -1,3 +1,5 @@
+import {readFile} from "fs/promises";
+
 import {Logger, logMethodCallSignature} from "@somethings/logger";
 
 import {Config} from "./config";
@@ -10,21 +12,36 @@ function toKebabCase(value: string): string {
 }
 
 export class EagleMqtt extends Logger {
-	private http: Http;
+	private http: Http | null = null;
 	private mqtt: Mqtt;
 
 	public constructor(
 		private config: Config,
+		private inputPaths?: Array<string>,
 	) {
 		super();
 
-		this.logWarning("EagleMqtt started. Creating HTTP and MQTT instances.");
-
-		this.http = new Http(this.config.http, (timestamp, batch) => {
-			return this.processBatch(timestamp, batch);
-		});
+		this.logInfo("EagleMqtt started. Creating MQTT instance.");
 
 		this.mqtt = new Mqtt(this.config.mqtt);
+
+		if (this.config.httpEnabled) {
+			this.logInfo("Creating HTTP instance.");
+
+			this.http = new Http(this.config.http, (timestamp, batch) => {
+				return this.processBatch(timestamp, batch);
+			});
+		} else {
+			this.logInfo("HTTP is disabled.");
+
+			if (this.inputPaths !== undefined && this.inputPaths.length > 0) {
+				this.logInfo("Input file list is provided, processing saved requests.");
+
+				this.inputPaths.forEach((path) => {
+					this.processFile(path);
+				});
+			}
+		}
 
 		this.http;
 	}
@@ -74,5 +91,24 @@ export class EagleMqtt extends Logger {
 		});
 
 		return isEverythingSaved;
+	}
+
+	@logMethodCallSignature()
+	private async processFile(path: string): Promise<void> {
+		const fileContent = await readFile(path);
+		const fileLines = fileContent.toString().split("\n");
+
+		fileLines.forEach((fileLine) => {
+			const [timestampString, batchString] = fileLine.split(/(?<=^\d+)\s(?=\{)/);
+
+			if (timestampString === undefined || batchString === undefined) {
+				return;
+			}
+
+			const timestamp = Math.round(parseInt(timestampString, 10) / 1000);
+			const batch = JSON.parse(batchString);
+
+			this.processBatch(timestamp, batch);
+		});
 	}
 }
