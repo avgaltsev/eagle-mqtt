@@ -34,13 +34,15 @@ export class EagleMqtt extends Logger {
 		} else {
 			this.logInfo("HTTP is disabled.");
 
-			if (this.inputPaths !== undefined && this.inputPaths.length > 0) {
-				this.logInfo("Input file list is provided, processing saved requests.");
+			setTimeout(() => {
+				if (this.inputPaths !== undefined && this.inputPaths.length > 0) {
+					this.logInfo("Input file list is provided, processing saved requests.");
 
-				this.inputPaths.forEach((path) => {
-					this.processFile(path);
-				});
-			}
+					this.inputPaths.forEach((path) => {
+						this.processFile(path);
+					});
+				}
+			}, 3000);
 		}
 
 		this.http;

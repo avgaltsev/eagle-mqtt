@@ -23,3 +23,10 @@ Updating config.
 sudo nano /var/lib/docker/volumes/eagle-mqtt-config/_data/config.json
 docker restart eagle-mqtt
 ```
+
+Using file import mode
+----------------------
+
+Disable HTTP listener in config.json.
+
+Run `LOG_LEVEL=3 npm start path1.log path2.log path3.log`.
